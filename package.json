@@ -1,14 +1,25 @@
 {
   "name": "@leventhan/battlemetrics",
-  "version": "1.5.7",
+  "version": "2.0.0",
   "description": "An object-oriented BattleMetrics (API) package for NodeJS. With error handling and control checks before sending API requests.",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "src",
+    "README.md",
+    "docs/API-COVERAGE.md"
+  ],
   "scripts": {
-    "test": "node test/index.js"
+    "test": "npm run test:unit && npm run test:contract",
+    "test:unit": "node --test --experimental-test-isolation=none test/unit/*.test.js test/legacy/*.test.js",
+    "test:contract": "node --test --experimental-test-isolation=none test/contract/*.test.js test/contract/endpoints/*.test.js",
+    "test:live:read": "node --env-file-if-exists=.env --test --experimental-test-isolation=none --test-concurrency=1 test/live/read/*.test.js",
+    "test:live:mutation": "node --env-file-if-exists=.env --test --experimental-test-isolation=none --test-concurrency=1 test/live/mutation/*.test.js",
+    "test:all": "npm run test && npm run test:live:read && npm run test:live:mutation"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/11TStudio/BattleMetrics.git"
+    "url": "git+https://github.com/LeventHAN/BattleMetrics.git"
   },
   "keywords": [
     "bmapi",
@@ -19,10 +30,7 @@
   "author": "curse",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/11TStudio/BattleMetrics/issues"
+    "url": "https://github.com/LeventHAN/BattleMetrics/issues"
   },
-  "homepage": "https://github.com/11TStudio/BattleMetrics#readme",
-  "dependencies": {
-    "axios": "^0.21.1"
-  }
+  "homepage": "https://github.com/LeventHAN/BattleMetrics#readme"
 }

@@ -1,0 +1,81 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      run_mutation_tests:
+        description: Run gated live mutation tests
+        required: false
+        default: "false"
+      mutation_confirmation:
+        description: Type I_UNDERSTAND_THIS_MUTATES_BATTLEMETRICS to confirm
+        required: false
+        default: ""
+
+jobs:
+  unit-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
+
+  live-read:
+    runs-on: ubuntu-latest
+    needs: unit-contract
+    env:
+      BM_TOKEN: ${{ secrets.BM_TOKEN }}
+      BM_TEST_GAME: ${{ secrets.BM_TEST_GAME }}
+      BM_TEST_SERVER_ID: ${{ secrets.BM_TEST_SERVER_ID }}
+      BM_TEST_PLAYER_ID: ${{ secrets.BM_TEST_PLAYER_ID }}
+      BM_TEST_IDENTIFIER_TYPE: ${{ secrets.BM_TEST_IDENTIFIER_TYPE }}
+      BM_TEST_IDENTIFIER: ${{ secrets.BM_TEST_IDENTIFIER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run test:live:read
+
+  live-mutation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.run_mutation_tests == 'true'
+    env:
+      BM_TOKEN: ${{ secrets.BM_TOKEN }}
+      BM_TEST_GAME: ${{ secrets.BM_TEST_GAME }}
+      BM_TEST_SERVER_ID: ${{ secrets.BM_TEST_SERVER_ID }}
+      BM_TEST_PLAYER_ID: ${{ secrets.BM_TEST_PLAYER_ID }}
+      BM_TEST_IDENTIFIER_TYPE: ${{ secrets.BM_TEST_IDENTIFIER_TYPE }}
+      BM_TEST_IDENTIFIER: ${{ secrets.BM_TEST_IDENTIFIER }}
+      BM_TEST_ORG_ID: ${{ secrets.BM_TEST_ORG_ID }}
+      BM_TEST_BAN_ID: ${{ secrets.BM_TEST_BAN_ID }}
+      BM_TEST_MUTATION_BAN_ID: ${{ secrets.BM_TEST_MUTATION_BAN_ID }}
+      BM_TEST_BAN_LIST_ID: ${{ secrets.BM_TEST_BAN_LIST_ID }}
+      BM_TEST_BAN_LIST_INVITE_ID: ${{ secrets.BM_TEST_BAN_LIST_INVITE_ID }}
+      BM_TEST_BAN_EXEMPTION_ID: ${{ secrets.BM_TEST_BAN_EXEMPTION_ID }}
+      BM_TEST_NATIVE_BAN_ID: ${{ secrets.BM_TEST_NATIVE_BAN_ID }}
+      BM_TEST_PLAYER_FLAG_ID: ${{ secrets.BM_TEST_PLAYER_FLAG_ID }}
+      BM_TEST_PLAYER_NOTE_ID: ${{ secrets.BM_TEST_PLAYER_NOTE_ID }}
+      BM_TEST_PLAYER_QUERY_ID: ${{ secrets.BM_TEST_PLAYER_QUERY_ID }}
+      BM_TEST_RESERVED_SLOT_ID: ${{ secrets.BM_TEST_RESERVED_SLOT_ID }}
+      BM_TEST_RCON_SERVER_ID: ${{ secrets.BM_TEST_RCON_SERVER_ID }}
+      BM_TEST_SESSION_ID: ${{ secrets.BM_TEST_SESSION_ID }}
+      BM_TEST_FRIEND_ORG_ID: ${{ secrets.BM_TEST_FRIEND_ORG_ID }}
+      BM_ENABLE_MUTATION_TESTS: "true"
+      BM_CONFIRM_MUTATION_TESTS: ${{ inputs.mutation_confirmation }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run test:live:mutation

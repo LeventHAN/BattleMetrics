@@ -1,111 +1,223 @@
 # BattleMetrics
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b2b008da112c4a36a179c9b0f1199045)](https://app.codacy.com/gh/11TStudio/BattleMetrics?utm_source=github.com&utm_medium=referral&utm_content=11TStudio/BattleMetrics&utm_campaign=Badge_Grade_Settings)
+A zero-dependency Node.js client for the [BattleMetrics API](https://www.battlemetrics.com/developers/documentation).
 
-BattleMetics is an advanced rewrite of BattleMeticsAPI (Orginal author: [@Curse345](https://github.com/Curse345)). <br>
-An easy and open source NPM Package that allows you to do a variety of functions within BattleMetrics but much easier!
-
-**Now refactored following OO principels with checkers, error handling and documented (WIP).**
-
-*TODO: Soon this repo will include all possible API requests.*
+This package provides resource-based methods for the documented BattleMetrics JSON:API endpoints, plus compatibility methods for projects that used the older BattleMetricsAPI-style wrapper.
 
 ## Installation
 
-This is a  [Node.js](https://nodejs.org/en/)  module.
-
-Before installing, [download and install Node.js](https://nodejs.org/en/download/).
-
-``` js
-const BM = require('@leventhan/battlemetrics')
-```
-```cli
-npm i @leventhan/battlemetrics
+```sh
+npm install @leventhan/battlemetrics
 ```
 
+```js
+const BM = require("@leventhan/battlemetrics");
+```
 
-## Initialization
+## Quick Start
 
-Before you start you must generate an API Key from [Battlemetrics](https://www.battlemetrics.com/developers).
-Then you can use it as below;
+Create a BattleMetrics API token from your BattleMetrics developer settings, then pass the token without the `Bearer` prefix.
 
-``` js
-// The options is NEEDED for the authentication!
-const options = {
-    token: process.env.TOKEN || "Your_TOKEN", // after v1.4.8 don't add Bearer!
-    serverID: process.env.SerVER_ID || 'Your_SERVER_ID',
-    game: process.env.GAME || 'squad'
-};
+```js
+const BM = require("@leventhan/battlemetrics");
 
-// Put the options in the consturctor
-const battleMetrics = new BM(options);
-
-// Example usage using .then()
-battleMetrics.getServerInfoById(battleMetrics.serverID).then(res => {
-    console.log(res)
-}).catch(err => {
-    console.log(err)
+const battleMetrics = new BM({
+  token: process.env.BM_TOKEN,
 });
 
-// Example usage using await (should be inside async function)
-const awaitExample = await battleMetrics.getServerInfoById(
-		battleMetrics.serverID
-	);
-console.log(awaitExample);
-/**
- * Example usages response would be:
- * {
- *   id: '10281405',
- *   name: '✪✪✪ GERMAN SQUAD #1 ✪✪✪ @GER-SQUAD.community',
- *   address: null,
- *   ip: '194.26.183.182',
- *   port: 7787,
- *   players: 99,
- *   maxPlayers: 100,
- *   rank: 19,
- *   location: [ 8.10812, 50.518749 ],
- *   status: 'online',
- *   details: {
- *       map: 'Narva_Invasion_v2',
- *       gameMode: 'Invasion',
- *       version: 'V2.11.0.25.64014',
- *       secure: 0,
- *       licensedServer: true,
- *       licenseId: '809942',
- *       numPubConn: 99,
- *       numPrivConn: 1,
- *       numOpenPrivConn: 1,
- *       modded: false,
- *       serverSteamId: '90153141169837065'
- *   },
- *   private: false,
- *   createdAt: '2021-02-19T13:52:06.986Z',
- *   updatedAt: '2021-11-15T19:48:42.026Z',
- *   portQuery: 27165,
- *   country: 'DE',
- *   queryStatus: 'valid'
- *   }
- */
+const server = await battleMetrics.servers.info("10281405");
+
+console.log(server.data.attributes.name);
 ```
- * `token` - Your BattleMetrics API Token
- * `serverID` - Your server's ID, can be found in the URL
- * `game` - Name of the game (ex.: squad, arma3, arma, etc...)
 
-## Example Usage
-See [test/index.js](https://github.com/11TStudio/BattleMetrics/blob/master/test/index.js) for the usage example of all existing functions.
+## Resource API
 
+Resource methods return the raw BattleMetrics JSON:API response document.
 
-## Current Avaible Methods
- * `getServerInfoById` - Get server info by server ID.
- * `getGameInfo` - Get game information by game name.
- * `getServerInfoByNameAndGame` - Get all servers info by filtering by serverName AND by game name.
- * `getPlayTimeHistory` - Get a player's play time history for max 90 days. Every day is one dataPoint.
- * `getServerPlayerInfo` - Get a player's information of specific server.
- * `getPlayerInfo` - Get a player's information in general.
- * `getBanInfoByID` - Get a ban information by ban id
- * `getBans` - Get all bans of your token.
- * `getLeaderBoard` - Get the leaderboard list between two dates.
- * `getGameFeatures` - Get game features by game name.
- * `getGameFeatureOptionsList` - Get all information for the feature per feature by feature id
- * `getPlayerInfoBy` - Get one player information by identifier (for example by steamID, playerName, playerID, IP, GUID, etc...)
- * `getPlayersInfoBy` - Get multiple players information by identifiers (for example by steamID, playerName, playerID, IP, GUID, etc...)
- * `coming more soon` - ...
+```js
+const servers = await battleMetrics.servers.list({
+  filter: {
+    search: "squad",
+    game: "squad",
+  },
+  page: {
+    size: 10,
+  },
+});
+```
+
+Query helpers support BattleMetrics JSON:API options such as `filter`, `page`, `fields`, `include`, and `sort`.
+
+```js
+const server = await battleMetrics.servers.info("10281405", {
+  include: "player",
+  fields: {
+    server: "name,ip,port",
+  },
+});
+```
+
+POST and PATCH endpoints accept a JSON:API request body as the first argument after path parameters.
+
+```js
+const matches = await battleMetrics.players.matchIdentifiers(
+  BM.createIdentifierDocument("steamID", "76561198110941835"),
+);
+```
+
+Every namespace also includes a low-level `request` method for new or changed BattleMetrics endpoints.
+
+```js
+const result = await battleMetrics.servers.request("GET", "/servers", {
+  query: {
+    filter: { search: "rust" },
+    page: { size: 5 },
+  },
+});
+```
+
+## Namespaces
+
+The client currently includes these namespaces:
+
+`bans`, `banLists`, `banListExemptions`, `banListInvites`, `nativeBans`, `commandsActivity`, `coplay`, `dataPoints`, `files`, `games`, `gameFeatures`, `players`, `playerIdentifiers`, `playerFlags`, `playerNotes`, `relatedPlayerQueries`, `playerQueryResults`, `reservedSlots`, `servers`, `serverGroups`, `sessions`, `organizations`, `organizationFriends`, `stats`, and `users`.
+
+For the full endpoint matrix, see [docs/API-COVERAGE.md](docs/API-COVERAGE.md).
+
+## Compatibility Methods
+
+Older method names are still available for migration purposes. They emit a deprecation warning once per method per client instance.
+
+```js
+const server = await battleMetrics.getServerInfoById("10281405");
+```
+
+Prefer the resource API for new code:
+
+```js
+const server = await battleMetrics.servers.info("10281405");
+```
+
+Available compatibility methods:
+
+- `getServerInfoById(serverId)`
+- `getGameInfo(game)`
+- `getServerInfoByName(name, pageLength)`
+- `getServerInfoByNameAndGame(serverName, game, pageLength)`
+- `getAllServersByServerNameCountryAndGame(serverName, country, game, pageLength)`
+- `getPlayTimeHistory(playerId, serverId, startTime, stopTime)`
+- `getServerPlayerInfo(playerId, serverId)`
+- `getPlayerInfo(playerId)`
+- `getBanInfoByID(banId)`
+- `getBans(query)`
+- `getLeaderBoard(listSize, startTime, stopTime)`
+- `getGameFeatures(game)`
+- `getGameFeatureOptionsList(gameFeatureId)`
+- `getPlayerInfoBy(typeIdentifier, identifier)`
+- `getPlayersInfoBy(typeIdentifier, identifiers)`
+
+To silence compatibility warnings:
+
+```js
+const battleMetrics = new BM({
+  token: process.env.BM_TOKEN,
+  deprecationWarnings: false,
+});
+```
+
+## Debugging
+
+Enable debug mode to log each response payload with method, URL, query params, status, and failure state. Request headers are not logged, so your API token is not printed.
+
+```js
+const battleMetrics = new BM({
+  token: process.env.BM_TOKEN,
+  debug: true,
+});
+```
+
+You can also enable debug logging with `BM_DEBUG=true`.
+
+Use `debugLogger` to route logs into your own logger.
+
+```js
+const battleMetrics = new BM({
+  token: process.env.BM_TOKEN,
+  debug: true,
+  debugLogger: (label, payload) => logger.debug(label, payload),
+});
+```
+
+## Constructor Options
+
+```js
+const battleMetrics = new BM({
+  token: process.env.BM_TOKEN,
+  serverID: "10281405",
+  game: "squad",
+  timeout: 10000,
+  debug: false,
+  deprecationWarnings: true,
+});
+```
+
+- `token`: BattleMetrics API token, without `Bearer`.
+- `serverID`: Optional default server ID used by compatibility helpers.
+- `game`: Optional default game ID used by compatibility helpers.
+- `timeout`: Optional request timeout in milliseconds.
+- `debug`: Enables response logging.
+- `debugLogger`: Custom debug logging function.
+- `deprecationWarnings`: Set to `false` to silence compatibility warnings.
+- `baseURL`: Override the API base URL for testing.
+- `httpClient`: Inject a request-compatible client for tests.
+
+## Errors
+
+Failed API responses are normalized into `BM.BattleMetricsError`.
+
+```js
+try {
+  await battleMetrics.bans.list();
+} catch (error) {
+  if (error.isBattleMetricsError) {
+    console.error(error.status, error.detail);
+  }
+}
+```
+
+The original BattleMetrics JSON:API `errors` array is available as `error.errors`.
+
+## Tests
+
+```sh
+npm test
+```
+
+Additional scripts:
+
+```sh
+npm run test:unit
+npm run test:contract
+npm run test:live:read
+npm run test:live:mutation
+```
+
+Local live test scripts automatically read `.env` with Node's built-in `--env-file-if-exists` flag. Normal `npm test` does not require `.env`.
+
+Live mutation tests are intentionally gated because they can create, update, or delete BattleMetrics resources.
+
+```sh
+BM_ENABLE_MUTATION_TESTS=true
+BM_CONFIRM_MUTATION_TESTS=I_UNDERSTAND_THIS_MUTATES_BATTLEMETRICS
+```
+
+Required live test variables:
+
+- `BM_TOKEN`
+- `BM_TEST_GAME`
+- `BM_TEST_SERVER_ID`
+- `BM_TEST_PLAYER_ID`
+- `BM_TEST_IDENTIFIER_TYPE`
+- `BM_TEST_IDENTIFIER`
+
+Optional admin and mutation fixture variables are listed in [.env.example](.env.example) and [docs/API-COVERAGE.md](docs/API-COVERAGE.md).
